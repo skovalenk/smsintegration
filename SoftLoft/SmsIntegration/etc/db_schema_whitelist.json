@@ -1,0 +1,34 @@
+{
+    "sms_messages": {
+        "column": {
+            "entity_id": true,
+            "event_type_code": true,
+            "data": true,
+            "customer_phone": true,
+            "count_attempts": true,
+            "store_id": true,
+            "status": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "sms_templates": {
+        "column": {
+            "message_template": true,
+            "store_id": true,
+            "event_type_code": true
+        }
+    },
+    "softloft_smsintegration_smstemplates": {
+        "column": {
+            "smstemplates_id": true,
+            "store_id": true,
+            "event_type_code": true,
+            "message_template": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    }
+}

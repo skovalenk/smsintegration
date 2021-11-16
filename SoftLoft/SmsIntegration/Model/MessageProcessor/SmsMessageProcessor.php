@@ -1,5 +1,7 @@
 <?php
-
+/*
+ * author information
+ */
 declare(strict_types=1);
 
 namespace SoftLoft\SmsIntegration\Model\MessageProcessor;
@@ -18,7 +20,14 @@ use SoftLoft\SmsIntegration\Model\ResourceModel\SmsIntegration;
 
 class SmsMessageProcessor implements SmsMessageProcessorInterface
 {
-    private SmsClientProviderInterface $smsClientProvider;
+    //Missing type comment
+    //Suggestion: remove type property. e.g. bellow
+
+    /**
+     * @var SmsClientProviderInterface
+     */
+    private $smsClientProvider;
+
     private ScopeConfigInterface $scopeConfig;
     private Json $json;
     private SmsBatchIteratorFactory $smsBatchIteratorFactory;
@@ -26,6 +35,7 @@ class SmsMessageProcessor implements SmsMessageProcessorInterface
     private SmsTemplatesRepositoryInterface $smsTemplatesRepository;
     private SmsIntegration $smsIntegration;
 
+    //please be sure to add variable name - $smsIntegration
     /**
      * @param SmsClientProviderInterface $smsClientProvider
      * @param ScopeConfigInterface $scopeConfig
@@ -33,7 +43,7 @@ class SmsMessageProcessor implements SmsMessageProcessorInterface
      * @param SmsBatchIteratorFactory $smsBatchIteratorFactory
      * @param VariableFilterInterface $variableFilter
      * @param SmsTemplatesRepositoryInterface $smsTemplatesRepository
-     * @param SmsIntegration $
+     * @param SmsIntegration $ 
      */
     public function __construct(
         SmsClientProviderInterface $smsClientProvider,
@@ -53,11 +63,7 @@ class SmsMessageProcessor implements SmsMessageProcessorInterface
         $this->smsIntegration = $smsIntegration;
     }
 
-    /**
-     * @return array
-     * @throws NoSuchEntityException
-     * @throws LocalizedException
-     */
+    // Redudant @throw was removed. Pelase add method description. 
     public function process(): void
     {
         $isEnabled = $this->scopeConfig->getValue(self::IS_SENDING_ENABLE);
@@ -67,27 +73,41 @@ class SmsMessageProcessor implements SmsMessageProcessorInterface
             $batchIterator = $this->smsBatchIteratorFactory->create();
 
             while ($rows = $batchIterator->getBatch()) {
+                //We should not use variable references in the code. It is best practice. Please use $rows[$index] = ? instead.
+                //Otherwise decalre a variable to store processed results.
                 foreach ($rows as $index => &$row) {
+                    //There is no check if key (count_attempts isset there). Also variables are not casted to int type.
                     if ($row['count_attempts'] > $maxCountAttempts) {
+                        //Path complexity should be reached here, as we should not have as big nested level, please move the logic to the separate function or separate service to reduce that kind of complexity
                         unset($rows[$index]);
                         continue;
                     }
                     $row['count_attempts']++;
-                    //Request for message should be cached in repository, so it should create additional load on the system
+                    //1. We are not supposed to call repository in loop, because of performance degradation
+                    //2. No additional check on event_type_code and store_id either
+                    //3. Suggestion: move the code to messageTextBuilder method
+                    //4. Please be sure that, a string line is less than 120 symbols, like this.
                     $message = $this->smsTemplatesRepository->getMessageTemplateByEventTypeCode($row['event_type_code'], $row['store_id']);
-
+                    //What if json->unserialize will return not traversable object?
+                    //Please be sure that json->unserialize return array first
                     foreach ($this->json->unserialize($row['notification_data']) as $key => $value) {
                         $message = $this->variableFilter->filter($key, (string) $value, $message);
                     }
 
                     try {
+                        //No additional check for phone_number key.
                         $this->smsClientProvider->send($row['phone_number'], $message);
                         $row['status'] = NotificationInterface::STATUS_COMPLETE;
                     } catch (\Exception $e) {
+                        //As it is CRON process we need to add some exceptions to CRON job, to have visibility on processed jobs.
+                        //But as we are processing bulk requests, we can`t throw Exception directly here, instead of this
+                        //please collect exception messages first, and throw them in the end of the function
                         $row['status'] = NotificationInterface::STATUS_FAILED;
                     }
                 }
 
+                //What if exception will be raised here. Please process exceptions of this method as well to do not stop
+                //batch process
                 $this->smsIntegration->saveBatch($rows);
             }
         }

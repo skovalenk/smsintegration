@@ -1,5 +1,7 @@
 <?php
-
+/*
+ * author information
+ */
 declare(strict_types=1);
 
 namespace SoftLoft\SmsIntegration\Model\MessageProcessor;
@@ -18,6 +20,12 @@ use SoftLoft\SmsIntegration\Model\ResourceModel\SmsIntegration;
 
 class SmsMessageProcessor implements SmsMessageProcessorInterface
 {
+    //Missing type comment
+    /**
+     * @var SmsClientProviderInterface
+     */
+
+    //Suggestion remove type of class property
     private SmsClientProviderInterface $smsClientProvider;
     private ScopeConfigInterface $scopeConfig;
     private Json $json;
@@ -33,7 +41,7 @@ class SmsMessageProcessor implements SmsMessageProcessorInterface
      * @param SmsBatchIteratorFactory $smsBatchIteratorFactory
      * @param VariableFilterInterface $variableFilter
      * @param SmsTemplatesRepositoryInterface $smsTemplatesRepository
-     * @param SmsIntegration $
+     * @param SmsIntegration $ //Fix this
      */
     public function __construct(
         SmsClientProviderInterface $smsClientProvider,
@@ -54,9 +62,7 @@ class SmsMessageProcessor implements SmsMessageProcessorInterface
     }
 
     /**
-     * @return array
-     * @throws NoSuchEntityException
-     * @throws LocalizedException
+     * Redudant @throw was removed.
      */
     public function process(): void
     {
@@ -74,6 +80,7 @@ class SmsMessageProcessor implements SmsMessageProcessorInterface
                     }
                     $row['count_attempts']++;
                     //Request for message should be cached in repository, so it should create additional load on the system
+                    //remove to messageBuilder method
                     $message = $this->smsTemplatesRepository->getMessageTemplateByEventTypeCode($row['event_type_code'], $row['store_id']);
 
                     foreach ($this->json->unserialize($row['notification_data']) as $key => $value) {
